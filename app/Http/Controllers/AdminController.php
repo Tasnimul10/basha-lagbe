@@ -49,6 +49,43 @@ class AdminController extends Controller
         return back()->with('status', 'Property status updated successfully.');
     }
 
+    public function reports()
+    {
+        $reports = \App\Models\Report::with(['user', 'property', 'property.landlord'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+        
+        return view('admin.reports', compact('reports'));
+    }
+
+    public function updateReportStatus(Request $request, \App\Models\Report $report)
+    {
+        $request->validate([
+            'status' => ['required', 'in:pending,reviewed,resolved'],
+        ]);
+
+        $report->update(['status' => $request->status]);
+
+        return back()->with('status', 'Report status updated successfully.');
+    }
+
+    public function deleteReportedProperty(\App\Models\Report $report)
+    {
+        $property = $report->property;
+        
+        if ($property) {
+            // Delete the property
+            $property->delete();
+            
+            // Update report status to resolved
+            $report->update(['status' => 'resolved']);
+            
+            return back()->with('status', 'Property deleted successfully and report resolved.');
+        }
+        
+        return back()->with('error', 'Property not found.');
+    }
+
     public function logout(Request $request)
     {
         Auth::guard('admin')->logout();

@@ -22,6 +22,16 @@ class Landlord extends Authenticatable
     protected $hidden = [
         'password',
     ];
+
+    public function properties()
+    {
+        return $this->hasMany(Property::class);
+    }
+
+    public function bookings()
+    {
+        return $this->hasMany(Booking::class);
+    }
 }
 
 

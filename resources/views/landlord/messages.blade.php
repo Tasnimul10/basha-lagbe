@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Messages - {{ $property->city }} - {{ $property->location }} - Landlord Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            200: '#bfdbfe',
+                            300: '#93c5fd',
+                            400: '#60a5fa',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#1e3a8a'
+                        },
+                        accent: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            200: '#bae6fd',
+                            300: '#7dd3fc',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .floating {
+            animation: float 6s ease-in-out infinite;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-primary-900 via-primary-800 to-accent-900 font-sans">
+    <!-- Background Decorations -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none">
+        <div class="absolute top-1/4 left-1/4 w-64 h-64 bg-primary-400/20 rounded-full blur-3xl floating"></div>
+        <div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-accent-400/20 rounded-full blur-3xl floating" style="animation-delay: -3s;"></div>
+        <div class="absolute top-3/4 left-1/2 w-48 h-48 bg-primary-300/20 rounded-full blur-3xl floating" style="animation-delay: -1.5s;"></div>
+    </div>
+    <!-- Header -->
+    <header class="relative glass-effect border-b border-white/20 p-6">
+        <div class="max-w-6xl mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-gradient-to-r from-primary-400 to-accent-400 rounded-xl flex items-center justify-center">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2 2z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                    </svg>
+                </div>
+                <span class="text-2xl font-bold bg-gradient-to-r from-primary-400 to-accent-400 bg-clip-text text-transparent">Basha Lagbe</span>
+            </div>
+            <nav class="flex items-center space-x-6">
+                <a href="{{ route('landlord.dashboard') }}" class="text-white/80 hover:text-white transition-colors duration-200 font-medium">Dashboard</a>
+                <a href="{{ route('landlord.messages') }}" class="text-white hover:text-white transition-colors duration-200 font-medium border-b-2 border-primary-400">All Messages</a>
+                <form method="POST" action="{{ route('landlord.logout') }}" class="inline">
+                    @csrf
+                    <button class="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-4 py-2 rounded-xl transition-all duration-200 transform hover:scale-105 font-medium">Logout</button>
+                </form>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="relative flex-1 p-6 flex flex-col">
+        <div class="max-w-4xl mx-auto flex-1 flex flex-col">
+            <!-- Property Info Card -->
+            <div class="glass-effect rounded-2xl p-6 mb-6 flex-shrink-0">
+                <div class="flex items-center space-x-4">
+                    <div class="w-16 h-16 bg-gradient-to-r from-primary-400 to-accent-400 rounded-2xl flex items-center justify-center flex-shrink-0">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2 2z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                        </svg>
+                    </div>
+                    <div class="flex-1">
+                        <h1 class="text-2xl font-bold text-white mb-1">{{ $property->city }} - {{ $property->location }}</h1>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-white/80">
+                            <div class="flex items-center space-x-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                </svg>
+                                <span>{{ $customer->name }}</span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                                </svg>
+                                <span>{{ $customer->email }}</span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"/>
+                                </svg>
+                                <span>৳{{ number_format($property->rent, 2) }}/month</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @if(session('success'))
+                <div class="glass-effect border border-green-400/30 text-white px-6 py-4 rounded-2xl mb-6 flex-shrink-0">
+                    <div class="flex items-center space-x-3">
+                        <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        <span>{{ session('success') }}</span>
+                    </div>
+                </div>
+            @endif
+
+            <!-- Chat Container -->
+            <div class="glass-effect rounded-2xl flex-1 flex flex-col mb-6 overflow-hidden">
+                <!-- Chat Header -->
+                <div class="p-4 border-b border-white/20 flex-shrink-0">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-gradient-to-r from-primary-400 to-accent-400 rounded-xl flex items-center justify-center">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h2 class="text-lg font-semibold text-white">Chat with {{ $customer->name }}</h2>
+                            <p class="text-white/60 text-sm">Property inquiry conversation</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Messages Area -->
+                <div class="flex-1 p-4 overflow-y-auto space-y-4" id="messages-container" style="max-height: 400px;">
+                    @if($messages->count() > 0)
+                        @foreach($messages as $message)
+                            <div class="flex {{ $message->sender_type === 'landlord' ? 'justify-end' : 'justify-start' }}">
+                                <div class="chat-bubble {{ $message->sender_type === 'landlord' ? 'chat-bubble-right bg-gradient-to-r from-primary-500 to-primary-600 text-white' : 'chat-bubble-left bg-white/90 text-gray-800' }} rounded-2xl px-4 py-3 shadow-lg">
+                                    <p class="text-sm leading-relaxed">{{ $message->message }}</p>
+                                    <p class="text-xs mt-2 {{ $message->sender_type === 'landlord' ? 'text-primary-100' : 'text-gray-500' }}">
+                                        {{ $message->created_at->format('M j, Y g:i A') }}
+                                    </p>
+                                </div>
+                            </div>
+                        @endforeach
+                    @else
+                        <div class="flex-1 flex items-center justify-center">
+                            <div class="text-center py-8">
+                                <div class="w-16 h-16 bg-gradient-to-r from-primary-400/20 to-accent-400/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                                    <svg class="w-8 h-8 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                                    </svg>
+                                </div>
+                                <h3 class="text-lg font-semibold text-white mb-2">Start the conversation!</h3>
+                                <p class="text-white/60">Send your first message to {{ $customer->name }}</p>
+                            </div>
+                        </div>
+                    @endif
+                </div>
+            </div>
+
+            <!-- Message Input Form -->
+            <form action="{{ route('landlord.properties.message.send', [$property, $customer->id]) }}" method="POST" class="glass-effect rounded-2xl p-6 flex-shrink-0">
+                @csrf
+                <div class="flex space-x-4">
+                    <div class="flex-1">
+                        <textarea name="message" id="message" rows="3" class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent resize-none" placeholder="Type your message here..." required></textarea>
+                        @error('message')
+                            <p class="text-red-400 text-sm mt-2 flex items-center space-x-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                <span>{{ $message }}</span>
+                            </p>
+                        @enderror
+                    </div>
+                    <div class="flex flex-col justify-end">
+                        <button type="submit" class="bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white p-3 rounded-xl transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:ring-offset-2 focus:ring-offset-transparent shadow-lg">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="mt-3 flex items-center justify-between text-white/60 text-sm">
+                    <span>Press Enter to send</span>
+                    <div class="flex items-center space-x-2">
+                        <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                        <span>Online</span>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="glass-effect border-t border-white/20 p-6">
+        <div class="max-w-4xl mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-8 h-8 bg-gradient-to-r from-primary-400 to-accent-400 rounded-lg flex items-center justify-center">
+                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2 2z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                    </svg>
+                </div>
+                <span class="text-lg font-bold bg-gradient-to-r from-primary-400 to-accent-400 bg-clip-text text-transparent">Basha Lagbe</span>
+            </div>
+            <div class="text-white/60 text-sm">
+                <p>&copy; 2024 Basha Lagbe. Connecting homes, building communities.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Auto-scroll to bottom of messages
+        const messagesContainer = document.getElementById('messages-container');
+        if (messagesContainer) {
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        // Auto-resize textarea
+        const textarea = document.getElementById('message');
+        textarea.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+        });
+
+        // Send message on Enter (but allow Shift+Enter for new line)
+        textarea.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                this.closest('form').submit();
+            }
+        });
+    </script>
+
+</body>
+</html>

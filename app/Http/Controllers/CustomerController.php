@@ -8,6 +8,9 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 use App\Models\Property;
+use App\Models\Booking;
+use App\Models\Message;
+use App\Models\Landlord;
 
 class CustomerController extends Controller
 {
@@ -145,7 +148,29 @@ class CustomerController extends Controller
             ->take(24)
             ->get();
 
-        return view('customer.customer_dashboard', compact('properties', 'search'));
+        // Get comparison list from session
+        $compareList = $request->session()->get('compare_properties', []);
+        
+        // Get user's favorites
+        $user = auth()->user();
+        $favoriteIds = $user ? $user->favorites()->pluck('property_id')->toArray() : [];
+        
+        return view('customer.customer_dashboard', compact('properties', 'search', 'compareList', 'favoriteIds'));
+    }
+
+    /**
+     * Show property details page
+     */
+    public function propertyDetails(Property $property)
+    {
+        // Load property with relationships
+        $property->load(['landlord', 'reviews.user']);
+        
+        // Get user's favorites
+        $user = auth()->user();
+        $favoriteIds = $user ? $user->favorites()->pluck('property_id')->toArray() : [];
+        
+        return view('customer.property_details', compact('property', 'favoriteIds'));
     }
 
     public function storeReview(Request $request, Property $property)
@@ -166,6 +191,251 @@ class CustomerController extends Controller
         ]);
 
         return back()->with('status', 'Review submitted successfully.');
+    }
+
+    /**
+     * Add property to comparison list
+     */
+    public function addToCompare(Request $request, Property $property)
+    {
+        $compareList = $request->session()->get('compare_properties', []);
+        
+        // Limit to maximum 3 properties for comparison
+        if (count($compareList) >= 3) {
+            return back()->with('error', 'You can compare maximum 3 properties at a time.');
+        }
+        
+        // Check if property is already in comparison list
+        if (!in_array($property->id, $compareList)) {
+            $compareList[] = $property->id;
+            $request->session()->put('compare_properties', $compareList);
+            return back()->with('success', 'Property added to comparison list.');
+        }
+        
+        return back()->with('info', 'Property is already in comparison list.');
+    }
+
+    /**
+     * Remove property from comparison list
+     */
+    public function removeFromCompare(Request $request, Property $property)
+    {
+        $compareList = $request->session()->get('compare_properties', []);
+        $compareList = array_diff($compareList, [$property->id]);
+        $request->session()->put('compare_properties', array_values($compareList));
+        
+        return back()->with('success', 'Property removed from comparison list.');
+    }
+
+    /**
+     * Show comparison page
+     */
+    public function compare(Request $request)
+    {
+        $compareList = $request->session()->get('compare_properties', []);
+        
+        if (empty($compareList)) {
+            return redirect()->route('customer.dashboard')->with('info', 'No properties selected for comparison.');
+        }
+        
+        $properties = Property::with(['landlord', 'reviews'])
+            ->whereIn('id', $compareList)
+            ->where('status', 'approved')
+            ->get();
+        
+        return view('customer.compare', compact('properties'));
+    }
+
+    /**
+     * Clear all properties from comparison list
+     */
+    public function clearCompare(Request $request)
+    {
+        $request->session()->forget('compare_properties');
+        return redirect()->route('customer.dashboard')->with('success', 'Comparison list cleared.');
+    }
+
+    /**
+     * Add property to favorites
+     */
+    public function addToFavorites(Property $property)
+    {
+        $user = auth()->user();
+        
+        if (!$user->favorites()->where('property_id', $property->id)->exists()) {
+            $user->favorites()->attach($property->id);
+            return back()->with('success', 'Property added to favorites!');
+        }
+        
+        return back()->with('info', 'Property is already in your favorites.');
+    }
+
+    /**
+     * Remove property from favorites
+     */
+    public function removeFromFavorites(Property $property)
+    {
+        $user = auth()->user();
+        $user->favorites()->detach($property->id);
+        
+        return back()->with('success', 'Property removed from favorites.');
+    }
+
+    /**
+     * Show favorites page
+     */
+    public function favorites()
+    {
+        $user = auth()->user();
+        $favorites = $user->favorites()
+            ->with(['landlord', 'reviews'])
+            ->where('status', 'approved')
+            ->get();
+        
+        return view('customer.favorites', compact('favorites'));
+    }
+
+    public function bookProperty(Request $request, Property $property)
+    {
+        $request->validate([
+            'visit_date' => 'required|date|after:today',
+            'message' => 'nullable|string|max:1000',
+        ]);
+
+        Booking::create([
+            'user_id' => auth()->id(),
+            'property_id' => $property->id,
+            'landlord_id' => $property->landlord_id,
+            'visit_date' => $request->visit_date,
+            'message' => $request->message,
+            'status' => 'pending',
+        ]);
+
+        return redirect()->back()->with('success', 'Visit request sent successfully!');
+    }
+
+    public function myBookings()
+    {
+        $user = auth()->user();
+        $bookings = $user->bookings()
+            ->with(['property', 'landlord'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+        
+        return view('customer.bookings', compact('bookings'));
+    }
+
+    /**
+     * Send message to landlord
+     */
+    public function sendMessage(Request $request, Property $property)
+    {
+        $request->validate([
+            'message' => 'required|string|max:1000'
+        ]);
+
+        $user = auth()->user();
+        
+        Message::create([
+            'property_id' => $property->id,
+            'customer_id' => $user->id,
+            'landlord_id' => $property->landlord_id,
+            'message' => $request->message,
+            'sender_type' => 'customer'
+        ]);
+
+        return back()->with('success', 'Message sent successfully!');
+    }
+
+    /**
+     * View messages for a property
+     */
+    public function viewMessages(Property $property)
+    {
+        $user = auth()->user();
+        
+        $messages = Message::where('property_id', $property->id)
+            ->where('customer_id', $user->id)
+            ->with(['customer', 'landlord'])
+            ->orderBy('created_at', 'asc')
+            ->get();
+
+        // Mark messages as read
+        Message::where('property_id', $property->id)
+            ->where('customer_id', $user->id)
+            ->where('sender_type', 'landlord')
+            ->where('is_read', false)
+            ->update(['is_read' => true]);
+
+        $landlord = Landlord::findOrFail($property->landlord_id);
+
+        return view('customer.property_messages', compact('property', 'messages', 'landlord'));
+    }
+
+    /**
+     * Get all message conversations
+     */
+    public function myMessages()
+    {
+        $user = auth()->user();
+        
+        $conversations = Message::where('customer_id', $user->id)
+            ->with(['property', 'landlord'])
+            ->select('property_id', 'landlord_id')
+            ->groupBy('property_id', 'landlord_id')
+            ->get()
+            ->map(function ($conversation) use ($user) {
+                $lastMessage = Message::where('property_id', $conversation->property_id)
+                    ->where('customer_id', $user->id)
+                    ->orderBy('created_at', 'desc')
+                    ->first();
+                
+                $unreadCount = Message::where('property_id', $conversation->property_id)
+                    ->where('customer_id', $user->id)
+                    ->where('sender_type', 'landlord')
+                    ->where('is_read', false)
+                    ->count();
+                
+                return [
+                    'property' => $conversation->property,
+                    'landlord' => $conversation->landlord,
+                    'last_message' => $lastMessage,
+                    'unread_count' => $unreadCount
+                ];
+            });
+
+        return view('customer.messages', compact('conversations'));
+    }
+
+    /**
+     * Handle property report submission
+     */
+    public function reportProperty(Request $request, Property $property)
+    {
+        $request->validate([
+            'reason' => 'required|string|in:inappropriate_content,false_information,spam,fraud,duplicate,other',
+            'description' => 'nullable|string|max:1000'
+        ]);
+
+        // Check if user already reported this property
+        $existingReport = \App\Models\Report::where('user_id', auth()->id())
+            ->where('property_id', $property->id)
+            ->first();
+
+        if ($existingReport) {
+            return back()->with('error', 'You have already reported this property.');
+        }
+
+        // Create the report
+        \App\Models\Report::create([
+            'user_id' => auth()->id(),
+            'property_id' => $property->id,
+            'reason' => $request->reason,
+            'description' => $request->description,
+            'status' => 'pending'
+        ]);
+
+        return back()->with('success', 'Property reported successfully. Our team will review it shortly.');
     }
 }
 
